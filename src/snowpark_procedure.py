@@ -52,3 +52,4 @@ def main(session: Session):
     
     # The return value of the function is the return value of the Stored Procedure
     return "Successfully processed and saved data."
+
