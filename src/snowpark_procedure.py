@@ -1,5 +1,5 @@
 from snowflake.snowpark import Session
-from snowflake.snowpark.functions import col, explode
+from snowflake.snowpark.functions import col
 from snowflake.snowpark.types import StringType, IntegerType
 
 def main(session: Session):
@@ -21,8 +21,11 @@ def main(session: Session):
         "electric_utility", "census_tract_2020"
     ]
     
-    # 3. Parse the nested JSON structure from the 'raw_json' column
-    df_exploded = raw_df.select(explode(col("raw_json:data")).alias("record"))
+    # 3. Parse the nested JSON structure using the flatten method
+    # This is the most robust way to un-nest arrays in Snowpark.
+    # The 'VALUE' column created by flatten contains each record from the original array.
+    df_flattened = raw_df.flatten(col("raw_json:data"))
+    df_exploded = df_flattened.select(col("VALUE").alias("record"))
     
     # Dynamically select and alias columns
     exprs = [col("record")[i].alias(column_names[i]) for i in range(len(column_names))]
@@ -48,3 +51,4 @@ def main(session: Session):
     
     # The return value of the function is the return value of the Stored Procedure
     return "Successfully processed and saved data."
+
