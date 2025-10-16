@@ -13,7 +13,6 @@ def run_dq_checks(df: DataFrame) -> dict:
     null_vin_count = df.where(col("VIN").isNull()).count()
 
     # Check 2: Count of records with a Base MSRP of 0
-    # This check flags the known source data quality issue.
     # The final column alias is "BaseMSRP".
     zero_msrp_count = df.where(col("BaseMSRP") == 0).count()
 
