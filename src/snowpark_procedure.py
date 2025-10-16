@@ -22,11 +22,11 @@ def main(session: Session):
     exprs = [col("record")[i].alias(column_names[i]) for i in range(len(column_names))]
     parsed_df = df_exploded.select(*exprs)
 
-    # This print statement is useful for debugging, you can remove it later.
-    print(f"DEBUG: Parsed DataFrame columns are: {parsed_df.columns}")
-
+    # --- ACTION REQUIRED ---
+    # Replace "PUT_CORRECT_VIN_COLUMN_NAME_HERE" with the actual column name 
+    # you found from the debug output (e.g., "VEHICLE_IDENTIFIER", "vin_num", etc.).
     final_column_mapping = {
-        "VIN_1_10": ("VIN", StringType()),
+        "PUT_CORRECT_VIN_COLUMN_NAME_HERE": ("VIN", StringType()),
         "CITY": ("City", StringType()),
         "STATE": ("State", StringType()),
         "MAKE": ("Make", StringType()),
@@ -39,13 +39,12 @@ def main(session: Session):
 
     final_select_exprs = []
     for column_name in parsed_df.columns:
+        # Use .upper() for a case-insensitive lookup in the dictionary keys
         column_name_upper = column_name.upper() 
         if column_name_upper in final_column_mapping:
             alias, new_type = final_column_mapping[column_name_upper]
-            # --- FIX --- Removed the f-string that added extra quotes
             final_select_exprs.append(col(column_name).cast(new_type).alias(alias))
         elif column_name in column_names:
-            # --- FIX --- Removed the f-string that added extra quotes
             final_select_exprs.append(col(column_name))
 
     final_df = parsed_df.select(*final_select_exprs)
