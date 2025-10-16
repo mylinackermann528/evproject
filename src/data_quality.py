@@ -29,3 +29,4 @@ def run_dq_checks(df: DataFrame) -> dict:
     
     print(f"DQ Check Results: {results}")
     return results
+
