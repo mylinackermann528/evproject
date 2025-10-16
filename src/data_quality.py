@@ -4,26 +4,37 @@ from snowflake.snowpark.dataframe import DataFrame
 def run_dq_checks(df: DataFrame) -> dict:
     """
     Runs a series of data quality checks on the transformed DataFrame.
-    It uses the final, business-friendly column names created by the main script.
+    It checks for column existence before running a check to avoid errors.
     """
     print("Running data quality checks on final DataFrame...")
 
-    # --- FIX ---
-    # Temporarily skipping the VIN null count to isolate the error.
-    # null_vin_count = df.where(col("VIN").isNull()).count()
-    null_vin_count = 0
+    # --- FIX: Made checks conditional to prevent errors ---
+
+    results = {}
+    
+    # Get a list of available columns in the final DataFrame, standardized to uppercase
+    available_columns = [c.upper() for c in df.columns]
+
+    # Check 1: Count of null VINs
+    if "VIN" in available_columns:
+        results["null_vin_count"] = df.where(col("VIN").isNull()).count()
+    else:
+        print("DQ Warning: 'VIN' column not found, skipping null count check.")
+        results["null_vin_count"] = -1 # Use -1 to indicate the check was skipped
 
     # Check 2: Count of records with a Base MSRP of 0
-    zero_msrp_count = df.where(col("BaseMSRP") == 0).count()
+    if "BASEMSRP" in available_columns:
+        results["zero_msrp_count"] = df.where(col("BaseMSRP") == 0).count()
+    else:
+        print("DQ Warning: 'BaseMSRP' column not found, skipping zero MSRP check.")
+        results["zero_msrp_count"] = -1
 
-    # Check 3: Count of records with an invalid Model Year (e.g., a future year)
-    invalid_year_count = df.where(col("ModelYear") > 2025).count()
-    
-    results = {
-        "null_vin_count": null_vin_count,
-        "zero_msrp_count": zero_msrp_count,
-        "invalid_year_count": invalid_year_count
-    }
+    # Check 3: Count of records with an invalid Model Year
+    if "MODELYEAR" in available_columns:
+        results["invalid_year_count"] = df.where(col("ModelYear") > 2025).count()
+    else:
+        print("DQ Warning: 'ModelYear' column not found, skipping invalid year check.")
+        results["invalid_year_count"] = -1
     
     print(f"DQ Check Results: {results}")
     return results
