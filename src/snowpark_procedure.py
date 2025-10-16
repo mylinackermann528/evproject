@@ -25,24 +25,24 @@ def main(session: Session):
     # --- THIS IS THE FIX ---
     # The dictionary keys must be UPPERCASE to match the DataFrame column names.
     final_column_mapping = {
-        "VIN_1_10": ("VIN", StringType()),
-        "CITY": ("City", StringType()),
-        "STATE": ("State", StringType()),
-        "MAKE": ("Make", StringType()),
-        "MODEL": ("Model", StringType()),
-        "MODEL_YEAR": ("ModelYear", IntegerType()),
-        "EV_TYPE": ("EV_Type", StringType()),
-        "ELECTRIC_RANGE": ("ElectricRange", IntegerType()),
-        "BASE_MSRP": ("BaseMSRP", IntegerType())
+        "vin_1_10": ("VIN", StringType()),
+        "city": ("City", StringType()),
+        "state": ("State", StringType()),
+        "make": ("Make", StringType()),
+        "model": ("Model", StringType()),
+        "model_year": ("ModelYear", IntegerType()),
+        "ev_type": ("EV_Type", StringType()),
+        "electric_range": ("ElectricRange", IntegerType()),
+        "base_msrp": ("BaseMSRP", IntegerType())
     }
 
     final_select_exprs = []
     # DataFrame columns are case-insensitive but resolve to uppercase.
     # We iterate through the uppercase column names from the DataFrame.
     for column_name in parsed_df.columns:
-        if column_name in final_column_mapping:
+        if column_name.lower() in final_column_mapping:
             # If it's a known column, apply the alias and type cast
-            alias, new_type = final_column_mapping[column_name]
+            alias, new_type = final_column_mapping[column_name.lower()]
             final_select_exprs.append(col(f'"{column_name}"').cast(new_type).alias(alias))
         else:
             # If it's a new/unknown column, pass it through as-is
