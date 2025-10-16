@@ -34,18 +34,24 @@ def main(session: Session):
         "base_msrp": ("BaseMSRP", IntegerType())
     }
 
+    # --- THIS IS THE FIX ---
+    # Create a more robust final selection process to handle case-sensitivity.
     final_select_exprs = []
-    for column_name in parsed_df.columns:
-        # The column_name from parsed_df.columns is already an uppercase identifier
-        if column_name.lower() in final_column_mapping:
-            # --- THIS IS THE FIX ---
-            # Pass the column_name string directly to col()
-            alias, new_type = final_column_mapping[column_name.lower()]
-            final_select_exprs.append(col(column_name).cast(new_type).alias(alias))
-        else:
-            # --- THIS IS THE FIX ---
-            # Pass the column_name string directly to col()
-            final_select_exprs.append(col(column_name))
+    
+    # Create a lookup map of lowercase_name -> ACTUAL_UPPERCASE_NAME
+    column_lookup = {c.lower(): c for c in parsed_df.columns}
+
+    for original_col_name_lower in column_lookup:
+        original_col_name_upper = column_lookup[original_col_name_lower]
+
+        if original_col_name_lower in final_column_mapping:
+            # If it's a known column, apply the alias and type cast
+            alias, new_type = final_column_mapping[original_col_name_lower]
+            final_select_exprs.append(col(original_col_name_upper).cast(new_type).alias(alias))
+        elif original_col_name_upper in column_names: # Check if it was part of the discovered schema
+            # If it's a new/unknown column from the source, pass it through
+             final_select_exprs.append(col(original_col_name_upper))
+
 
     final_df = parsed_df.select(*final_select_exprs)
 
@@ -60,3 +66,4 @@ def main(session: Session):
     final_df.write.mode("overwrite").save_as_table("clean_ev_data_snowpark")
     
     return "Transformation complete. Schema detected dynamically. Data successfully saved."
+
