@@ -23,9 +23,9 @@ def main(session: Session):
     parsed_df = df_exploded.select(*exprs)
 
     # --- ACTION REQUIRED ---
-    # Replace "YOUR_ACTUAL_VIN_COLUMN_NAME" with the real column name from your data.
+    # Replace "VIN_1_10" with the actual column name from your source data.
     final_column_mapping = {
-        "YOUR_ACTUAL_VIN_COLUMN_NAME": ("VIN", StringType()),
+        "VIN_1_10": ("VIN", StringType()),
         "CITY": ("City", StringType()),
         "STATE": ("State", StringType()),
         "MAKE": ("Make", StringType()),
