@@ -60,4 +60,3 @@ def main(session: Session):
     final_df.write.mode("overwrite").save_as_table("clean_ev_data_snowpark")
     
     return "Transformation complete. Schema detected dynamically. Data successfully saved."
-
