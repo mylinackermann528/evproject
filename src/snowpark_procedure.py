@@ -11,9 +11,9 @@ def main(session: Session):
 
     print("Discovering schema from JSON metadata...")
     column_metadata_df = raw_df.select(flatten(raw_df['"RAW_JSON"']['meta']['view']['columns']))
-
+    
     column_names_rows = column_metadata_df.select(col("VALUE")['fieldName'].alias("name")).collect()
-
+    
     column_names = [row['NAME'] for row in column_names_rows]
     print(f"Discovered {len(column_names)} columns.")
 
@@ -22,6 +22,7 @@ def main(session: Session):
     exprs = [col("record")[i].alias(column_names[i]) for i in range(len(column_names))]
     parsed_df = df_exploded.select(*exprs)
 
+    # --- THIS IS THE FIX ---
     # The dictionary keys are now UPPERCASE to match the DataFrame's column names.
     final_column_mapping = {
         "VIN_1_10": ("VIN", StringType()),
@@ -53,10 +54,10 @@ def main(session: Session):
 
     if dq_results["null_vin_count"] > 0:
         raise ValueError(f"Critical DQ Check Failed: {dq_results['null_vin_count']} Null VINs found. Halting pipeline.")
-
+    
     if dq_results["zero_msrp_count"] > 0:
         print(f"DQ Warning: Found {dq_results['zero_msrp_count']} records with a Base MSRP of 0.")
 
     final_df.write.mode("overwrite").save_as_table("clean_ev_data_snowpark")
-
+    
     return "Transformation complete. Schema detected dynamically. Data successfully saved."
