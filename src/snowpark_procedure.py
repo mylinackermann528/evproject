@@ -56,4 +56,6 @@ def main(session: Session):
     if dq_results["zero_msrp_count"] > 0:
         print(f"DQ Warning: Found {dq_results['zero_msrp_count']} records with a Base MSRP of 0.")
 
-    final_df.write.mode("overwrite").save_as_table("clean_ev_data_
+    final_df.write.mode("overwrite").save_as_table("clean_ev_data_snowpark")
+    
+    return "Transformation complete. Schema detected dynamically. Data successfully saved."
