@@ -22,6 +22,10 @@ def main(session: Session):
     exprs = [col("record")[i].alias(column_names[i]) for i in range(len(column_names))]
     parsed_df = df_exploded.select(*exprs)
 
+    # --- DEBUG LINE ADDED ---
+    # This saves the parsed DataFrame to a temporary table for inspection.
+    parsed_df.write.mode("overwrite").save_as_table("TEMP_DEBUG_COLUMNS")
+
     final_column_mapping = {
         "VIN_1_10": ("VIN", StringType()),
         "CITY": ("City", StringType()),
@@ -35,7 +39,6 @@ def main(session: Session):
     }
 
     final_select_exprs = []
-    # --- THIS IS THE FIX ---
     # Convert column_name to uppercase for a case-insensitive lookup.
     for column_name in parsed_df.columns:
         # Standardize the column name to uppercase for the dictionary lookup
@@ -52,4 +55,14 @@ def main(session: Session):
     final_df = parsed_df.select(*final_select_exprs)
 
     # Now, final_df will correctly have columns named "VIN", "City", etc.
-    dq_results
+    dq_results = run_dq_checks(final_df)
+
+    if dq_results["null_vin_count"] > 0:
+        raise ValueError(f"Critical DQ Check Failed: {dq_results['null_vin_count']} Null VINs found. Halting pipeline.")
+    
+    if dq_results["zero_msrp_count"] > 0:
+        print(f"DQ Warning: Found {dq_results['zero_msrp_count']} records with a Base MSRP of 0.")
+
+    final_df.write.mode("overwrite").save_as_table("clean_ev_data_snowpark")
+    
+    return "Transformation complete. Schema detected dynamically. Data successfully saved."
