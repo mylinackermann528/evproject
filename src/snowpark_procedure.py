@@ -24,7 +24,7 @@ exprs = [col("record")[i].alias(column_names[i]) for i in range(len(column_names
 parsed_df = df_exploded.select(*exprs)
 
 # --- CLEANUP STEP 1 ---
-# Normalize all column names to uppercase (pass only strings to to_df)
+# Normalize all column names to uppercase (must use strings only)
 parsed_df = parsed_df.to_df(*[c.upper() for c in parsed_df.columns])
 
 # --- FIX ---
