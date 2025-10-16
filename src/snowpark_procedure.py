@@ -22,8 +22,7 @@ def main(session: Session):
     exprs = [col("record")[i].alias(column_names[i]) for i in range(len(column_names))]
     parsed_df = df_exploded.select(*exprs)
 
-    # --- NEW DEBUG LINE ---
-    # This print statement will show the exact column names in the query output.
+    # This print statement is useful for debugging, you can remove it later.
     print(f"DEBUG: Parsed DataFrame columns are: {parsed_df.columns}")
 
     final_column_mapping = {
@@ -43,9 +42,11 @@ def main(session: Session):
         column_name_upper = column_name.upper() 
         if column_name_upper in final_column_mapping:
             alias, new_type = final_column_mapping[column_name_upper]
-            final_select_exprs.append(col(f'"{column_name}"').cast(new_type).alias(alias))
+            # --- FIX --- Removed the f-string that added extra quotes
+            final_select_exprs.append(col(column_name).cast(new_type).alias(alias))
         elif column_name in column_names:
-            final_select_exprs.append(col(f'"{column_name}"'))
+            # --- FIX --- Removed the f-string that added extra quotes
+            final_select_exprs.append(col(column_name))
 
     final_df = parsed_df.select(*final_select_exprs)
 
@@ -59,4 +60,4 @@ def main(session: Session):
 
     final_df.write.mode("overwrite").save_as_table("clean_ev_data_snowpark")
     
-    return "Transformation complete. Schema detected dynamically. Data successfully saved."
+    return "Transformation complete. Schema detected
