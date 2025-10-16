@@ -22,9 +22,9 @@ def main(session: Session):
     exprs = [col("record")[i].alias(column_names[i]) for i in range(len(column_names))]
     parsed_df = df_exploded.select(*exprs)
 
-    # --- DEBUG LINE ADDED ---
-    # This saves the parsed DataFrame to a temporary table for inspection.
-    parsed_df.write.mode("overwrite").save_as_table("TEMP_DEBUG_COLUMNS")
+    # --- NEW DEBUG LINE ---
+    # This print statement will show the exact column names in the query output.
+    print(f"DEBUG: Parsed DataFrame columns are: {parsed_df.columns}")
 
     final_column_mapping = {
         "VIN_1_10": ("VIN", StringType()),
@@ -39,22 +39,16 @@ def main(session: Session):
     }
 
     final_select_exprs = []
-    # Convert column_name to uppercase for a case-insensitive lookup.
     for column_name in parsed_df.columns:
-        # Standardize the column name to uppercase for the dictionary lookup
         column_name_upper = column_name.upper() 
         if column_name_upper in final_column_mapping:
-            # If it's a known column, apply the alias and type cast
             alias, new_type = final_column_mapping[column_name_upper]
-            # Use the original column_name to select from the DataFrame
             final_select_exprs.append(col(f'"{column_name}"').cast(new_type).alias(alias))
         elif column_name in column_names:
-            # If it's a new/unknown column from the source, pass it through as-is
             final_select_exprs.append(col(f'"{column_name}"'))
 
     final_df = parsed_df.select(*final_select_exprs)
 
-    # Now, final_df will correctly have columns named "VIN", "City", etc.
     dq_results = run_dq_checks(final_df)
 
     if dq_results["null_vin_count"] > 0:
