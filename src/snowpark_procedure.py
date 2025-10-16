@@ -11,9 +11,9 @@ def main(session: Session):
 
     print("Discovering schema from JSON metadata...")
     column_metadata_df = raw_df.select(flatten(raw_df['"RAW_JSON"']['meta']['view']['columns']))
-    
+
     column_names_rows = column_metadata_df.select(col("VALUE")['fieldName'].alias("name")).collect()
-    
+
     column_names = [row['NAME'] for row in column_names_rows]
     print(f"Discovered {len(column_names)} columns.")
 
@@ -22,7 +22,6 @@ def main(session: Session):
     exprs = [col("record")[i].alias(column_names[i]) for i in range(len(column_names))]
     parsed_df = df_exploded.select(*exprs)
 
-    # --- THIS IS THE FIX ---
     # The dictionary keys are now UPPERCASE to match the DataFrame's column names.
     final_column_mapping = {
         "VIN_1_10": ("VIN", StringType()),
@@ -54,50 +53,10 @@ def main(session: Session):
 
     if dq_results["null_vin_count"] > 0:
         raise ValueError(f"Critical DQ Check Failed: {dq_results['null_vin_count']} Null VINs found. Halting pipeline.")
-    
+
     if dq_results["zero_msrp_count"] > 0:
         print(f"DQ Warning: Found {dq_results['zero_msrp_count']} records with a Base MSRP of 0.")
 
     final_df.write.mode("overwrite").save_as_table("clean_ev_data_snowpark")
-    
+
     return "Transformation complete. Schema detected dynamically. Data successfully saved."
-```eof
-
-***
-
-### 2. The Updated `data_quality.py`
-
-This script is now guaranteed to work because the main script will correctly provide a DataFrame with the exact column names it expects ("VIN", "BaseMSRP", etc.).
-
-```python:Data Quality Checks Script:data_quality.py
-from snowflake.snowpark.functions import col
-from snowflake.snowpark.dataframe import DataFrame
-
-def run_dq_checks(df: DataFrame) -> dict:
-    """
-    Runs a series of data quality checks on the transformed DataFrame.
-    It uses the final, business-friendly column names created by the main script.
-    """
-    print("Running data quality checks on final DataFrame...")
-
-    # Check 1: Count of null VINs (should be zero for a primary identifier)
-    # The final column alias from the main script is "VIN".
-    null_vin_count = df.where(col("VIN").isNull()).count()
-
-    # Check 2: Count of records with a Base MSRP of 0
-    # The final column alias is "BaseMSRP".
-    zero_msrp_count = df.where(col("BaseMSRP") == 0).count()
-
-    # Check 3: Count of records with an invalid Model Year (e.g., a future year)
-    # The final column alias is "ModelYear".
-    invalid_year_count = df.where(col("ModelYear") > 2025).count()
-    
-    results = {
-        "null_vin_count": null_vin_count,
-        "zero_msrp_count": zero_msrp_count,
-        "invalid_year_count": invalid_year_count
-    }
-    
-    print(f"DQ Check Results: {results}")
-    return results
-```eof
