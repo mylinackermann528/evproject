@@ -22,8 +22,6 @@ def main(session: Session):
     exprs = [col("record")[i].alias(column_names[i]) for i in range(len(column_names))]
     parsed_df = df_exploded.select(*exprs)
 
-    # --- THIS IS THE FIX ---
-    # The dictionary keys must be UPPERCASE to match the DataFrame column names.
     final_column_mapping = {
         "vin_1_10": ("VIN", StringType()),
         "city": ("City", StringType()),
@@ -37,16 +35,17 @@ def main(session: Session):
     }
 
     final_select_exprs = []
-    # DataFrame columns are case-insensitive but resolve to uppercase.
-    # We iterate through the uppercase column names from the DataFrame.
     for column_name in parsed_df.columns:
+        # The column_name from parsed_df.columns is already an uppercase identifier
         if column_name.lower() in final_column_mapping:
-            # If it's a known column, apply the alias and type cast
+            # --- THIS IS THE FIX ---
+            # Pass the column_name string directly to col()
             alias, new_type = final_column_mapping[column_name.lower()]
-            final_select_exprs.append(col(f'"{column_name}"').cast(new_type).alias(alias))
+            final_select_exprs.append(col(column_name).cast(new_type).alias(alias))
         else:
-            # If it's a new/unknown column, pass it through as-is
-            final_select_exprs.append(col(f'"{column_name}"'))
+            # --- THIS IS THE FIX ---
+            # Pass the column_name string directly to col()
+            final_select_exprs.append(col(column_name))
 
     final_df = parsed_df.select(*final_select_exprs)
 
