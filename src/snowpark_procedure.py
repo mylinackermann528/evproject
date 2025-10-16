@@ -22,12 +22,10 @@ def main(session: Session):
     exprs = [col("record")[i].alias(column_names[i]) for i in range(len(column_names))]
     parsed_df = df_exploded.select(*exprs)
 
-    # --- NEW DEBUG LINE ---
-    # This will print the exact column names to your query results.
-    print(f"DEBUG: Parsed DataFrame columns are: {parsed_df.columns}")
-
+    # --- ACTION REQUIRED ---
+    # Replace "vin_1_10" with the actual column name you found in the debug output.
     final_column_mapping = {
-        "VIN_1_10": ("VIN", StringType()),
+        "vin_1_10": ("VIN", StringType()),
         "CITY": ("City", StringType()),
         "STATE": ("State", StringType()),
         "MAKE": ("Make", StringType()),
@@ -40,6 +38,7 @@ def main(session: Session):
 
     final_select_exprs = []
     for column_name in parsed_df.columns:
+        # Use .upper() for a case-insensitive lookup in the dictionary keys
         column_name_upper = column_name.upper() 
         if column_name_upper in final_column_mapping:
             alias, new_type = final_column_mapping[column_name_upper]
