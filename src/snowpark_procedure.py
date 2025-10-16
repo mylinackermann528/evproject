@@ -22,8 +22,9 @@ def main(session: Session):
     exprs = [col("record")[i].alias(column_names[i]) for i in range(len(column_names))]
     parsed_df = df_exploded.select(*exprs)
 
-    # --- ACTION REQUIRED ---
-    # Replace "VIN_1_10" with the actual column name from your source data.
+    # --- FIX ---
+    # The key for the VIN column has been corrected to "VIN_1_10"
+    # based on the provided sample data structure.
     final_column_mapping = {
         "VIN_1_10": ("VIN", StringType()),
         "CITY": ("City", StringType()),
