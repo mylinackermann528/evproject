@@ -40,14 +40,19 @@ def main(session: Session):
 
     final_select_exprs = []
     for column_name in parsed_df.columns:
+        # **FIXED LOGIC**
+        # Step 1: Clean every column first by trimming whitespace and removing quotes.
+        cleaned_col = regexp_replace(trim(col(column_name)), r'^"+|"+$', '')
+
+        # Step 2: Check if the column needs to be renamed and cast.
         if column_name in final_column_mapping:
             alias, new_type = final_column_mapping[column_name]
-            # **FIXED LINE: Trim whitespace and remove one or more quotes from ends**
-            clean_col = regexp_replace(trim(col(column_name)), r'^"+|"+$', '')
-            final_select_exprs.append(clean_col.cast(new_type).alias(alias))
+            # Apply casting and aliasing to the already cleaned column.
+            final_expr = cleaned_col.cast(new_type).alias(alias)
+            final_select_exprs.append(final_expr)
         else:
-            # Keep columns that are not being renamed
-            final_select_exprs.append(col(column_name))
+            # If not in the map, just add the cleaned column back.
+            final_select_exprs.append(cleaned_col.alias(column_name))
             
     final_df = parsed_df.select(*final_select_exprs)
 
