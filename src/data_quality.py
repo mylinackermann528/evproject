@@ -4,12 +4,12 @@ from snowflake.snowpark.dataframe import DataFrame
 def run_dq_checks(df: DataFrame) -> dict:
     """
     Runs a series of data quality checks on the transformed DataFrame.
-    It uses the final, business-friendly column names.
+    It uses the final, business-friendly column names created by the main script.
     """
     print("Running data quality checks on final DataFrame...")
 
     # Check 1: Count of null VINs (should be zero for a primary identifier)
-    # The final column alias is "VIN".
+    # The final column alias from the main script is "VIN".
     null_vin_count = df.where(col("VIN").isNull()).count()
 
     # Check 2: Count of records with a Base MSRP of 0
@@ -29,4 +29,3 @@ def run_dq_checks(df: DataFrame) -> dict:
     
     print(f"DQ Check Results: {results}")
     return results
-
