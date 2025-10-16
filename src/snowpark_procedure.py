@@ -13,7 +13,10 @@ def main(session: Session):
     column_metadata_df = raw_df.select(flatten(raw_df['"RAW_JSON"']['meta']['view']['columns']))
     
     column_names_rows = column_metadata_df.select(col("VALUE")['fieldName'].alias("name")).collect()
-    column_names = [row['name'] for row in column_names_rows]
+    
+    # --- THIS IS THE FIX ---
+    # Access the row object using the uppercase key 'NAME'
+    column_names = [row['NAME'] for row in column_names_rows]
     print(f"Discovered {len(column_names)} columns: {column_names}")
 
     df_flattened = raw_df.flatten(raw_df['"RAW_JSON"']['data'])
