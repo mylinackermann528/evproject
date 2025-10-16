@@ -14,8 +14,6 @@ def main(session: Session):
     
     column_names_rows = column_metadata_df.select(col("VALUE")['fieldName'].alias("name")).collect()
     
-    # --- THIS IS THE FIX ---
-    # Access the row object using the uppercase key 'NAME'
     column_names = [row['NAME'] for row in column_names_rows]
     print(f"Discovered {len(column_names)} columns: {column_names}")
 
@@ -24,25 +22,31 @@ def main(session: Session):
     exprs = [col("record")[i].alias(column_names[i]) for i in range(len(column_names))]
     parsed_df = df_exploded.select(*exprs)
 
+    # --- THIS IS THE FIX ---
+    # The dictionary keys must be UPPERCASE to match the DataFrame column names.
     final_column_mapping = {
-        "vin_1_10": ("VIN", StringType()),
-        "city": ("City", StringType()),
-        "state": ("State", StringType()),
-        "make": ("Make", StringType()),
-        "model": ("Model", StringType()),
-        "model_year": ("ModelYear", IntegerType()),
-        "ev_type": ("EV_Type", StringType()),
-        "electric_range": ("ElectricRange", IntegerType()),
-        "base_msrp": ("BaseMSRP", IntegerType())
+        "VIN_1_10": ("VIN", StringType()),
+        "CITY": ("City", StringType()),
+        "STATE": ("State", StringType()),
+        "MAKE": ("Make", StringType()),
+        "MODEL": ("Model", StringType()),
+        "MODEL_YEAR": ("ModelYear", IntegerType()),
+        "EV_TYPE": ("EV_Type", StringType()),
+        "ELECTRIC_RANGE": ("ElectricRange", IntegerType()),
+        "BASE_MSRP": ("BaseMSRP", IntegerType())
     }
 
     final_select_exprs = []
+    # DataFrame columns are case-insensitive but resolve to uppercase.
+    # We iterate through the uppercase column names from the DataFrame.
     for column_name in parsed_df.columns:
         if column_name in final_column_mapping:
+            # If it's a known column, apply the alias and type cast
             alias, new_type = final_column_mapping[column_name]
-            final_select_exprs.append(col(column_name).cast(new_type).alias(alias))
+            final_select_exprs.append(col(f'"{column_name}"').cast(new_type).alias(alias))
         else:
-            final_select_exprs.append(col(column_name))
+            # If it's a new/unknown column, pass it through as-is
+            final_select_exprs.append(col(f'"{column_name}"'))
 
     final_df = parsed_df.select(*final_select_exprs)
 
