@@ -9,12 +9,13 @@ from transformations import clean_ev_data
 
 S3_RAW_PATH = "s3://ev-project-mylinackermann/bronze/ev_data_raw/"
 S3_SILVER_PATH = "s3://ev-project-mylinackermann/curated/ev_data_clean/"
-RDS_HOST = "ev-population-db.c0nsiackq1aq.us-east-1.rds.amazonaws.com" 
+RDS_HOST = "<YOUR_RDS_POSTGRES_ENDPOINT_WITHOUT_PORT>" 
 RDS_PORT = "5432"
-RDS_DB = "ev-population-db"
+RDS_DB = "<YOUR_DB_NAME>"
 RDS_USER = "evprojectuser"
 RDS_PASSWORD = "NewMan2025!!!"
 RDS_TABLE = "ev_population_master"
+GLUE_CONNECTION_NAME = "Aurora Connection"
 
 COLUMN_NAMES = [
     "VIN_1_10", "County", "City", "State", "Postal_Code", "Model_Year", 
@@ -58,10 +59,10 @@ def main():
             .option("user", RDS_USER) \
             .option("password", RDS_PASSWORD) \
             .option("driver", "org.postgresql.Driver") \
-            .option("aws_iam_role", "<YOUR_GLUE_IAM_ROLE_ARN_IF_USING_IAM_AUTH>") \
+            .option("connectionName", GLUE_CONNECTION_NAME) \
             .mode("overwrite") \
             .save()
-        print("Successfully wrote data to RDS.")
+        print(f"Successfully wrote data to RDS using connection: {GLUE_CONNECTION_NAME}")
     except Exception as e:
         print(f"WARNING: Failed to write to RDS. Check VPC, Security Group, and JDBC details. Error: {e}")
 
