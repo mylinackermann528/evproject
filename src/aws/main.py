@@ -10,19 +10,17 @@ from transformations import clean_ev_data
 S3_RAW_PATH = "s3://ev-project-mylinackermann/bronze/ev_data_raw/"
 S3_SILVER_PATH = "s3://ev-project-mylinackermann/curated/ev_data_clean/"
 
-# --- DATABASE DETAILS (Not used in this test version) ---
-RDS_HOST = "ev-population-db.c0nsiackq1aq.us-east-1.rds.amazonaws.com" 
+RDS_HOST = "ev-population-db.c0nsiackq1aq.us-east-1.rds.amazonaws.com"
 RDS_PORT = "5432"
-RDS_DB = "ev-population-db" 
+RDS_DB = "ev-population-db"
 RDS_USER = "evprojectuser"
 RDS_PASSWORD = "NewMan2025!!!"
 RDS_TABLE = "ev_population_master"
-# ----------------------------------------------------
 
 COLUMN_NAMES = [
-    "VIN_1_10", "County", "City", "State", "Postal_Code", "Model_Year", 
-    "Make", "Model", "Electric_Vehicle_Type", "CAFV_Eligibility", 
-    "Electric_Range", "Base_MSRP", "Legislative_District", "DOL_Vehicle_ID", 
+    "VIN_1_10", "County", "City", "State", "Postal_Code", "Model_Year",
+    "Make", "Model", "Electric_Vehicle_Type", "CAFV_Eligibility",
+    "Electric_Range", "Base_MSRP", "Legislative_District", "DOL_Vehicle_ID",
     "Vehicle_ID", "2020_Census_Tract"
 ]
 
@@ -50,27 +48,23 @@ def main():
     
     clean_df.write.format("delta").mode("overwrite").save(S3_SILVER_PATH)
 
-    # --- DATABASE WRITE TEMPORARILY DISABLED FOR DIAGNOSTIC TEST ---
-    # The following block is commented out to isolate the JDBC driver as a potential issue.
-    #
-    # print(f"Writing master data to RDS table: {RDS_TABLE}")
-    # 
-    # jdbc_url = f"jdbc:postgresql://{RDS_HOST}:{RDS_PORT}/{RDS_DB}"
-    # 
-    # try:
-    #     clean_df.write.format("jdbc") \
-    #         .option("url", jdbc_url) \
-    #         .option("dbtable", RDS_TABLE) \
-    #         .option("user", RDS_USER) \
-    #         .option("password", RDS_PASSWORD) \
-    #         .option("driver", "org.postgresql.Driver") \
-    #         .mode("overwrite") \
-    #         .save()
-    #     print("Successfully wrote data directly to RDS.")
-    # except Exception as e:
-    #     print(f"ERROR: Failed to write to RDS. Check job's network configuration. Error: {e}")
+    print(f"Writing master data to RDS table: {RDS_TABLE}")
+    
+    jdbc_url = f"jdbc:postgresql://{RDS_HOST}:{RDS_PORT}/{RDS_DB}"
+    
+    try:
+        clean_df.write.format("jdbc") \
+            .option("url", jdbc_url) \
+            .option("dbtable", RDS_TABLE) \
+            .option("user", RDS_USER) \
+            .option("password", RDS_PASSWORD) \
+            .option("driver", "org.postgresql.Driver") \
+            .mode("overwrite") \
+            .save()
+        print("Successfully wrote data directly to RDS.")
+    except Exception as e:
+        print(f"ERROR: Failed to write to RDS. Check job's network configuration. Error: {e}")
 
-    print("RDS write step skipped for this test run.")
     job.commit()
 
 if __name__ == "__main__":
