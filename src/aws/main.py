@@ -24,26 +24,41 @@ def main():
     job = Job(glueContext)
     job.init(args['JOB_NAME'], args)
 
-    print(f"Reading raw data from: {S3_RAW_PATH}")
-    
-    raw_df = spark.read.format("json").option("multiline", "true").load(S3_RAW_PATH)
-    
-    if raw_df.isEmpty():
-        raise Exception(f"Input file is empty or path is incorrect: {S3_RAW_PATH}")
-
-    print("Starting data transformation and cleaning...")
-    clean_df = clean_ev_data(raw_df)
-    
-    print(f"Transformation complete. Writing {clean_df.count()} records.")
-    
-    print(f"Writing master data to S3 Delta Lake: {S3_SILVER_PATH}")
-    clean_df.write.format("delta").mode("overwrite").save(S3_SILVER_PATH)
-
-    print(f"Writing master data to RDS table: {RDS_TABLE}")
-    
-    jdbc_url = f"jdbc:postgresql://{RDS_HOST}:{RDS_PORT}/{RDS_DB}"
-    
     try:
+        print("STEP 1: Reading raw data...")
+        raw_df = spark.read.format("json").option("multiline", "true").load(S3_RAW_PATH)
+        print("STEP 1: Successfully read raw data.")
+    except Exception as e:
+        print("FATAL ERROR IN STEP 1: Could not read source data from S3.")
+        raise e
+
+    try:
+        print("STEP 2: Transforming data...")
+        clean_df = clean_ev_data(raw_df)
+        print("STEP 2: Successfully created transformation plan.")
+    except Exception as e:
+        print("FATAL ERROR IN STEP 2: The 'clean_ev_data' function failed.")
+        raise e
+
+    try:
+        print("STEP 3: Materializing data and getting count...")
+        record_count = clean_df.count()
+        print(f"STEP 3: Successfully counted {record_count} records.")
+    except Exception as e:
+        print("FATAL ERROR IN STEP 3: Could not count records. This often indicates a data corruption or schema mismatch issue.")
+        raise e
+        
+    try:
+        print("STEP 4: Writing to S3 Delta Lake...")
+        clean_df.write.format("delta").mode("overwrite").save(S3_SILVER_PATH)
+        print("STEP 4: Successfully wrote to S3.")
+    except Exception as e:
+        print("FATAL ERROR IN STEP 4: Could not write to S3 Delta Lake.")
+        raise e
+
+    try:
+        print("STEP 5: Writing to RDS...")
+        jdbc_url = f"jdbc:postgresql://{RDS_HOST}:{RDS_PORT}/{RDS_DB}"
         clean_df.write.format("jdbc") \
             .option("url", jdbc_url) \
             .option("dbtable", RDS_TABLE) \
@@ -52,9 +67,10 @@ def main():
             .option("driver", "org.postgresql.Driver") \
             .mode("overwrite") \
             .save()
-        print("Successfully wrote data directly to RDS.")
+        print("STEP 5: Successfully wrote to RDS.")
     except Exception as e:
-        print(f"ERROR: Failed to write to RDS. Check job's network configuration. Error: {e}")
+        print("FATAL ERROR IN STEP 5: Could not write to RDS.")
+        raise e
 
     job.commit()
 
